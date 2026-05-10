@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>褥瘡AIフローチャート補助</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">DESIGN-R / TIME Decision Support</p>
+      <h1>褥瘡AIフローチャート補助</h1>
+      <p class="lead">写真AIは仮判定です。D（深さ）とP（ポケット）は必ず手動確認してください。</p>
+    </div>
+    <div class="status-pill" id="api-status">手動入力だけでも使用可</div>
+  </header>
+
+  <main class="workspace">
+    <section class="panel capture-panel" aria-labelledby="photo-title">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Step 1</p>
+          <h2 id="photo-title">写真入力</h2>
+        </div>
+      </div>
+
+      <div class="input-grid">
+        <label class="image-action">
+          <span class="action-icon">CAM</span>
+          <span>
+            <strong>カメラで撮影</strong>
+            <small>スマホでは背面カメラを優先します</small>
+          </span>
+          <input id="camera-input" type="file" accept="image/png,image/jpeg,image/webp" capture="environment">
+        </label>
+
+        <label class="image-action">
+          <span class="action-icon">FILE</span>
+          <span>
+            <strong>保存済み写真を選択</strong>
+            <small>PC・スマホ内の画像をアップロード</small>
+          </span>
+          <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp">
+        </label>
+
+        <button class="image-action image-action-button" id="live-camera-btn" type="button">
+          <span class="action-icon">LIVE</span>
+          <span>
+            <strong>ブラウザでカメラ起動</strong>
+            <small>PCのWebカメラやスマホブラウザで撮影</small>
+          </span>
+        </button>
+      </div>
+
+      <div class="privacy-note">
+        写真はAI解析のため外部APIへ一時送信されます。顔、氏名、ID、診察券、部屋番号などが写り込まない画像を使ってください。このアプリは写真を保存しません。
+      </div>
+
+      <div class="camera-live" id="camera-live" hidden>
+        <video id="camera-video" autoplay playsinline muted></video>
+        <div class="toolbar">
+          <button class="primary-btn" id="capture-frame-btn" type="button">この映像を撮影</button>
+          <button class="ghost-btn" id="stop-camera-btn" type="button">カメラ停止</button>
+        </div>
+        <div class="camera-note">ブラウザからカメラ許可を求められたら「許可」を選択してください。</div>
+      </div>
+
+      <div class="preview-shell" id="preview-shell">
+        <div class="preview-empty">写真を選択するとここに表示されます</div>
+        <img id="image-preview" alt="選択した褥瘡写真のプレビュー">
+      </div>
+
+      <div class="toolbar">
+        <button class="primary-btn" id="analyze-btn" type="button" disabled>AI解析</button>
+        <button class="ghost-btn" id="clear-btn" type="button">写真をクリア</button>
+      </div>
+    </section>
+
+    <section class="panel ai-panel" aria-labelledby="ai-title">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Step 2</p>
+          <h2 id="ai-title">AI仮判定</h2>
+        </div>
+      </div>
+      <div id="ai-result" class="ai-result empty">
+        写真を解析すると、AIが推定した観察所見とDESIGN-R候補が表示されます。
+      </div>
+    </section>
+
+    <section class="panel scoring-panel" aria-labelledby="score-title">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Step 3</p>
+          <h2 id="score-title">DESIGN-R 確認・修正</h2>
+        </div>
+        <button class="ghost-btn compact" id="reset-scores-btn" type="button">リセット</button>
+      </div>
+      <div id="score-controls" class="score-controls"></div>
+    </section>
+
+    <section class="panel output-panel" aria-labelledby="recommend-title">
+      <div class="panel-head">
+        <div>
+          <p class="section-kicker">Step 4</p>
+          <h2 id="recommend-title">提案とA/P</h2>
+        </div>
+      </div>
+
+      <div class="summary-strip" id="confirmed-summary">DESIGN-Rを選択してください</div>
+      <div id="alerts" class="alert-list"></div>
+      <div class="subsection-title">元フローチャートの治療法</div>
+      <div class="treatment-guide" id="treatment-guide"></div>
+      <div class="subsection-title">現在の入力からの候補</div>
+      <div id="recommendations" class="recommendations"></div>
+
+      <div class="ap-box">
+        <div class="ap-head">
+          <h3>コピー用 A/P</h3>
+          <button class="ghost-btn compact" id="copy-ap-btn" type="button">コピー</button>
+        </div>
+        <textarea id="ap-text" readonly></textarea>
+      </div>
+    </section>
+  </main>
+
+  <div class="drug-modal" id="drug-modal" hidden>
+    <div class="drug-modal-backdrop" data-drug-close></div>
+    <section class="drug-modal-panel" role="dialog" aria-modal="true" aria-labelledby="drug-modal-title">
+      <button class="drug-modal-close" type="button" data-drug-close aria-label="閉じる">×</button>
+      <div class="drug-modal-kicker" id="drug-modal-kicker">TIME</div>
+      <h2 id="drug-modal-title"></h2>
+      <p class="drug-modal-generic" id="drug-modal-generic"></p>
+      <div class="drug-modal-body" id="drug-modal-body"></div>
+    </section>
+  </div>
+
+  <script src="drug-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
