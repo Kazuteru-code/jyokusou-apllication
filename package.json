@@ -1,10 +1,11 @@
-{
-  "name": "pressure-ulcer-ai-app",
-  "version": "0.1.0",
-  "private": true,
-  "type": "commonjs",
-  "scripts": {
-    "start": "npx serve .",
-    "check": "node --check api/analyze-wound.js"
-  }
-}
+{                                                                                                                                                                                                                                      
+    "name": "pressure-ulcer-ai-app",                                                                                                                                                                                                     
+    "version": "0.1.0",                                                                                                                                                                                                                  
+    "private": true,                                                                                                                                                                                                                     
+    "type": "commonjs",                                                                                                                                                                                                                  
+    "scripts": {                                                                                                                                                                                                                         
+      "build": "echo \"No build step required\"",                                                                                                                                                                                        
+      "start": "npx serve .",                                                                                                                                                                                                            
+      "check": "node --check api/analyze-wound.js"                                                                                                                                                                                       
+    }                                                                                                                                                                                                                                    
+  } 
