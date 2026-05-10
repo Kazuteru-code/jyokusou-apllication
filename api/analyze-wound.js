@@ -84,13 +84,13 @@ async function callVisionProvider(image) {
 }
 
 async function callGeminiProvider(image) {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.AI_API_KEY;
+  const apiKey = String(process.env.GEMINI_API_KEY || process.env.AI_API_KEY || "").trim();
   if (!apiKey) {
     throwPublic(501, "GEMINI_API_KEY is not set. Add it to Vercel Environment Variables.");
   }
 
   const baseUrl = (process.env.GEMINI_API_BASE_URL || "https://generativelanguage.googleapis.com/v1beta").replace(/\/$/, "");
-  const model = process.env.GEMINI_MODEL || process.env.AI_MODEL || "gemini-2.5-flash";
+  const model = normalizeGeminiModel(process.env.GEMINI_MODEL || process.env.AI_MODEL || "gemini-2.5-flash");
   const endpoint = `${baseUrl}/models/${encodeURIComponent(model)}:generateContent`;
 
   const response = await fetch(endpoint, {
@@ -124,14 +124,26 @@ async function callGeminiProvider(image) {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const message = payload.error?.message || "Gemini API request failed.";
+    const message = payload.error?.message || payload.error?.status || "Gemini API request failed.";
     const error = new Error(message);
     error.statusCode = 502;
-    error.publicMessage = "Gemini API request failed. You can continue with manual scoring.";
+    error.publicMessage = `Gemini API request failed (${response.status}): ${sanitizePublicError(message)} You can continue with manual scoring.`;
     throw error;
   }
 
   return parseJsonObject(extractGeminiText(payload));
+}
+
+function normalizeGeminiModel(model) {
+  return String(model || "gemini-2.5-flash")
+    .trim()
+    .replace(/^models\//, "");
+}
+
+function sanitizePublicError(message) {
+  return String(message || "")
+    .replace(/[A-Za-z0-9_-]{30,}/g, "[redacted]")
+    .slice(0, 300);
 }
 
 async function callOpenAiProvider(image) {
